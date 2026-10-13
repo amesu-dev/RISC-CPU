@@ -29,6 +29,10 @@ namespace RISC_CPU.Assembler {
         public static byte ParseRegister(string token, int lineNumber) {
             token = token.Trim().ToUpper();
 
+            // Decline string and char literals as registers, since they are valid immediates.
+            if (token.Length > 0 && (token[0] == '"' || token[0] == '\''))
+                throw new AsmException(lineNumber, $"expected a register, got literal {token}");
+
             // rN form
             if (token.Length >= 2 && token[0] == 'R') {
                 if (
@@ -61,6 +65,10 @@ namespace RISC_CPU.Assembler {
             if (token.Length == 0)
                 throw new AsmException(lineNumber, "empty immediate");
 
+
+            if (token[0] == '"')
+                throw new AsmException(lineNumber, $"string literal '{token}' cannot be used as an immediate");
+
             // char literal
             if (token[0] == '\'') {
                 if (token.Length < 3 || token[^1] != '\'')
@@ -75,9 +83,10 @@ namespace RISC_CPU.Assembler {
                     return UnescapeChar(inner[1], lineNumber);
 
                 if (inner.Length == 4 && inner[0] == '\\' && inner[1] == 'x') {
-                    if (byte.TryParse(inner.AsSpan(2), NumberStyles.HexNumber,
-                                      CultureInfo.InvariantCulture, out byte b))
-                        return b;
+                    if (byte.TryParse(
+                        inner.AsSpan(2), NumberStyles.HexNumber,
+                        CultureInfo.InvariantCulture, out byte b
+                    )) return b;
                     throw new AsmException(lineNumber, $"invalid hex escape {token}");
                 }
 

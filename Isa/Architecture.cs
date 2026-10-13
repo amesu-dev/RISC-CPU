@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RISC_CPU {
+namespace RISC_CPU.Isa {
     public enum FORMATS {
         R, // Register-to-Register
         I, // Immediate (арифметика с imm, load, jalr, ecall)

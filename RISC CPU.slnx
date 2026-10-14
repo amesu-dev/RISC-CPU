@@ -1,6 +1,4 @@
 <Solution>
-  <Folder Name="/Элементы решения/">
-    <File Path="Assembler.cs" />
-  </Folder>
-  <Project Path="RISC CPU.csproj" />
+  <Project Path="../RISC CPU Tests/RISC CPU Tests.csproj" Id="35d317ec-4d0b-4632-af44-a12e313a75e0" />
+  <Project Path="RISC CPU Assembler.csproj" />
 </Solution>

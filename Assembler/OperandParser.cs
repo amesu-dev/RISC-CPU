@@ -27,7 +27,7 @@ namespace RISC_CPU.Assembler {
         //  Parse a register operand: "r5", "a0", "zero", ...
         // ============================================================
         public static byte ParseRegister(string token, int lineNumber) {
-            token = token.Trim().ToUpper();
+            token = token.Trim();
 
             // Decline string and char literals as registers, since they are valid immediates.
             if (token.Length > 0 && (token[0] == '"' || token[0] == '\''))
@@ -104,8 +104,7 @@ namespace RISC_CPU.Assembler {
                 if (token.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
                     return sign * (int)Convert.ToUInt32(token[2..], 2);
 
-                return sign * int.Parse(token, NumberStyles.AllowLeadingSign,
-                                        CultureInfo.InvariantCulture);
+                return sign * int.Parse(token, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
             }
             catch {
                 throw new AsmException(lineNumber, $"invalid immediate '{token}'");

@@ -30,7 +30,6 @@ namespace RISC_CPU.Isa {
         public static uint Encode(
             COMMANDS cmd, byte rd, byte rs1, byte rs2, int imm
         ) {
-
             if (!InstructionSet.Descriptors.TryGetValue(cmd, out var d)) {
                 throw new EncodeException($"no descriptor for command {cmd}");
             }

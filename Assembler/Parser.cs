@@ -6,23 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace RISC_CPU.Assembler {
-    public enum Section { None, Text, Data }
-
-    // ============================================================
-    //  Intermediate representation of a single parsed line.
-    //  Filled by the parser, consumed by both passes.
-    // ============================================================
-    public sealed class SourceLine {
-        public int LineNumber;
-        public string RawText = "";
-
-        // What the line contains: label, mnemonic, directive, args
-        public string? Label;              // null if none
-        public string? Mnemonic;           // "add", "lw", ... or null
-        public string? Directive;          // ".text", ".word", ... or null
-        public string[] Args = Array.Empty<string>();
-        public Section Section = Section.None;
-    }
     // ============================================================
     //  Parses the source text into a flat list of SourceLine
     //  entries. Pseudo-instructions are expanded here, so later
@@ -180,18 +163,19 @@ namespace RISC_CPU.Assembler {
                     EmitDirective(label, ".data", args, lineNumber);
                     return;
 
+                case ".space":
+                case ".align":
+                    if (args.Length != 1)
+                        throw new AsmException(lineNumber, $"'{name}' expects exactly one argument, got {args.Length}");
+                    
+                    goto case ".word";
                 case ".word":
                 case ".half":
                 case ".byte":
                 case ".string":
-                case ".space":
-                case ".align":
                     if (_current != Section.Data)
-                        throw new AsmException(lineNumber,
-                            $"data directive '{name}' is only allowed inside .data");
-                    if (args.Length != 1)
-                        throw new AsmException(lineNumber,
-                            $"'{name}' expects exactly one argument, got {args.Length}");
+                        throw new AsmException(lineNumber, $"data directive '{name}' is only allowed inside .data");
+
                     EmitDirective(label, name, args, lineNumber);
                     return;
 

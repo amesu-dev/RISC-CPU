@@ -47,8 +47,7 @@ namespace RISC_CPU.Assembler
 
         public void Add(Symbol symbol) {
             if (_byName.ContainsKey(symbol.Name))
-                throw new AsmException(symbol.LineNumber,
-                    $"label '{symbol.Name}' is already defined");
+                throw new AsmException(symbol.LineNumber, $"label '{symbol.Name}' is already defined");
 
             _byName[symbol.Name] = symbol;
         }
@@ -74,8 +73,8 @@ namespace RISC_CPU.Assembler
         public required int EntryPoint { get; init; }
         public required SymbolTable Symbols { get; init; }
 
-        public int TextBase => 0;
-        public int DataBase => Code.Length * 4;
+        public int TextBase { get; init; }
+        public int DataBase { get; init; }
 
         // Convenience for the loader: a single flat memory image
         public byte[] ToMemoryImage() {

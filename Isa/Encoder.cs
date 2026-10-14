@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography;
 
 namespace RISC_CPU.Isa {
    public sealed class EncodeException : Exception {
@@ -46,12 +47,17 @@ namespace RISC_CPU.Isa {
         }
 
         // ============================================================
+        //           31    25 24 20 19 15 14    12 11 7  6      0
         //  R-type: [ funct7 | rs2 | rs1 | funct3 | rd | opcode ]
         // ============================================================
         private static uint PackR(InstructionDescriptor d, byte rd, byte rs1, byte rs2) {
-            uint op = (uint)d.Opcode;
-            uint f3 = d.Funct3 ?? 0;
-            uint f7 = d.Funct7 ?? 0;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            uint f3 = (uint)(d.Funct3 ?? 0) & 0b111;
+            uint f7 = (uint)(d.Funct7 ?? 0) & 0b0111_1111;
+            rd  &= 0b01_1111;
+            rs1 &= 0b01_1111;
+            rs2 &= 0b01_1111;
+
 
             return (f7 << 25)
                  | ((uint)rs2 << 20)
@@ -62,6 +68,7 @@ namespace RISC_CPU.Isa {
         }
 
         // ============================================================
+        //           31       20 19 15 14    12 11 7 6       0
         //  I-type: [ imm[11:0] | rs1 | funct3 | rd | opcode ]
         //
         //  For SLLI/SRLI/SRAI the top 7 bits of the immediate field
@@ -70,8 +77,10 @@ namespace RISC_CPU.Isa {
         //  gotcha: the shift amount lives in the low 5 bits only.
         // ============================================================
         private static uint PackI(InstructionDescriptor d, byte rd, byte rs1, int imm) {
-            uint op = (uint)d.Opcode;
-            uint f3 = d.Funct3 ?? 0;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            uint f3 = (uint)(d.Funct3 ?? 0) & 0b111;
+            rd  &= 0b01_1111;
+            rs1 &= 0b01_1111;
 
             // Range check: signed 12-bit field.
             if (!FitsSigned(imm, 12)) {
@@ -80,6 +89,7 @@ namespace RISC_CPU.Isa {
 
             uint immField;
 
+            // Shift command correction
             if (d.Command == COMMANDS.SLLI
                 || d.Command == COMMANDS.SRLI
                 || d.Command == COMMANDS.SRAI) {
@@ -102,8 +112,10 @@ namespace RISC_CPU.Isa {
         //  S-type: [ imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] | opcode ]
         // ============================================================
         private static uint PackS(InstructionDescriptor d, byte rs1, byte rs2, int imm) {
-            uint op = (uint)d.Opcode;
-            uint f3 = d.Funct3 ?? 0;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            uint f3 = (uint)(d.Funct3 ?? 0) & 0b111;
+            rs1 &= 0b01_1111;
+            rs2 &= 0b01_1111;
 
             if (!FitsSigned(imm, 12)) {
                 throw new EncodeException($"store offset {imm} does not fit in 12 bits");
@@ -129,8 +141,10 @@ namespace RISC_CPU.Isa {
         //  Signed 13-bit field, range -4096..4094.
         // ============================================================
         private static uint PackB(InstructionDescriptor d, byte rs1, byte rs2, int imm) {
-            uint op = (uint)d.Opcode;
-            uint f3 = d.Funct3 ?? 0;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            uint f3 = (uint)(d.Funct3 ?? 0) & 0b111;
+            rs1 &= 0b01_1111;
+            rs2 &= 0b01_1111;
 
             if ((imm & 1) != 0) {
                 throw new EncodeException($"branch offset {imm} must be a multiple of 2");
@@ -166,7 +180,8 @@ namespace RISC_CPU.Isa {
         //  affect the encoded result.
         // ============================================================
         private static uint PackU(InstructionDescriptor d, byte rd, int imm) {
-            uint op = (uint)d.Opcode;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            rd &= 0b01_11111;
 
             uint uimm = (uint)imm;
             if ((uimm & 0xFFF) != 0) {
@@ -186,7 +201,8 @@ namespace RISC_CPU.Isa {
         //  field, range -1048576..1048574.
         // ============================================================
         private static uint PackJ(InstructionDescriptor d, byte rd, int imm) {
-            uint op = (uint)d.Opcode;
+            uint op = (uint)d.Opcode & 0b0111_1111;
+            rd &= 0b01_1111;
 
             if ((imm & 1) != 0) {
                 throw new EncodeException($"jump offset {imm} must be a multiple of 2");
@@ -197,15 +213,15 @@ namespace RISC_CPU.Isa {
 
             uint u = (uint)(imm & 0x1FFFFF);
 
-            uint b20    = (u >> 20) & 1;
-            uint b19_12 = (u >> 12) & 0xFF;
-            uint b11    = (u >> 11) & 1;
-            uint b10_1  = (u >> 1)  & 0x3FF;
+            uint j20    = (u >> 20) & 1;
+            uint j19_12 = (u >> 12) & 0xFF;
+            uint j11    = (u >> 11) & 1;
+            uint j10_1  = (u >> 1)  & 0x3FF;
 
-            return (b20    << 31)
-                 | (b10_1  << 21)
-                 | (b11    << 20)
-                 | (b19_12 << 12)
+            return (j20    << 31)
+                 | (j10_1  << 21)
+                 | (j11    << 20)
+                 | (j19_12 << 12)
                  | ((uint)rd << 7)
                  | op;
         }
